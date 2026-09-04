@@ -1,15 +1,10 @@
 /**
- * Concrete implementations of {@link com.clicktucasa.domain.repository.RaffleRepository}
- * belong here (e.g. a JPA/Postgres adapter, an in-memory adapter for local
- * development, etc.).
- *
- * This package is intentionally left without a concrete implementation for
- * the Hito 3 deliverable: wiring a real Spring Boot + database adapter is
- * scope for Unidad 4. Pilar 3 of this Hito is satisfied without it, since
- * the use cases in {@code application.usecase} depend only on the
- * {@code RaffleRepository} interface (injected by constructor) and are
- * fully tested with Mockito against that abstraction — no real database is
- * required for the domain and application layers to be complete and
- * verifiable.
+ * Concrete implementation of {@link com.clicktucasa.domain.repository.RaffleRepository},
+ * completed in the Hito 4 deliverable: {@link com.clicktucasa.infrastructure.persistence.RaffleRepositoryAdapter}
+ * backs the domain's pure repository port with Spring Data JPA and
+ * PostgreSQL. The {@code entity} subpackage holds the JPA "shell" classes
+ * ({@code RaffleEntity}, {@code TicketEntity}) and the {@code repository}
+ * subpackage holds the generated {@code JpaRepository}; neither the
+ * domain nor the application layer ever references them directly.
  */
 package com.clicktucasa.infrastructure.persistence;

@@ -225,4 +225,27 @@ class RaffleTest {
         // ACT & ASSERT
         assertThrows(InvalidRaffleOperationException.class, raffle::cancel);
     }
+
+    @Test
+    @DisplayName("Should reconstitute a DRAWN raffle with its winner ticket number")
+    void shouldReconstituteDrawnRaffle() {
+        // ARRANGE & ACT
+        Raffle raffle = Raffle.reconstitute("raf-900", "Villa", new HouseAddress("Address"), new HouseValue(new BigDecimal("100000.00")), 1, ticketList, RaffleStatus.DRAWN, 2L);
+
+        // ASSERT
+        assertEquals(RaffleStatus.DRAWN, raffle.getStatus());
+        assertEquals(2L, raffle.getWinnerTicketNumber());
+        assertEquals("raf-900", raffle.getId());
+    }
+
+    @Test
+    @DisplayName("Should reconstitute an ACTIVE raffle with a null winner ticket number")
+    void shouldReconstituteActiveRaffleWithoutWinner() {
+        // ARRANGE & ACT
+        Raffle raffle = Raffle.reconstitute("raf-901", "Villa", new HouseAddress("Address"), new HouseValue(new BigDecimal("100000.00")), 1, ticketList, RaffleStatus.ACTIVE, null);
+
+        // ASSERT
+        assertEquals(RaffleStatus.ACTIVE, raffle.getStatus());
+        assertNull(raffle.getWinnerTicketNumber());
+    }
 }

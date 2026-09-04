@@ -214,4 +214,37 @@ class TicketTest {
         // ACT & ASSERT
         assertThrows(TicketNotAvailableException.class, () -> ticket.assignToOwner("buyer-2"));
     }
+
+    @Test
+    @DisplayName("Should reconstitute a RESERVED ticket with its owner and reservation deadline")
+    void shouldReconstituteReservedTicket() {
+        // ARRANGE
+        TicketPrice price = new TicketPrice(new BigDecimal("30.00"));
+        LocalDateTime reservedUntil = LocalDateTime.now().plusMinutes(15);
+
+        // ACT
+        Ticket ticket = Ticket.reconstitute(301L, price, TicketStatus.RESERVED, "user-42", reservedUntil);
+
+        // ASSERT
+        assertEquals(301L, ticket.getNumber());
+        assertEquals(price, ticket.getPrice());
+        assertEquals(TicketStatus.RESERVED, ticket.getStatus());
+        assertEquals("user-42", ticket.getOwnerId());
+        assertEquals(reservedUntil, ticket.getReservedUntil());
+    }
+
+    @Test
+    @DisplayName("Should reconstitute a SOLD ticket without a reservation deadline")
+    void shouldReconstituteSoldTicket() {
+        // ARRANGE
+        TicketPrice price = new TicketPrice(new BigDecimal("30.00"));
+
+        // ACT
+        Ticket ticket = Ticket.reconstitute(302L, price, TicketStatus.SOLD, "user-7", null);
+
+        // ASSERT
+        assertEquals(TicketStatus.SOLD, ticket.getStatus());
+        assertEquals("user-7", ticket.getOwnerId());
+        assertNull(ticket.getReservedUntil());
+    }
 }

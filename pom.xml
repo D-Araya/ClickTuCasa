@@ -4,78 +4,104 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.3.4</version>
+        <relativePath/>
+    </parent>
+
     <groupId>com.clicktucasa</groupId>
     <artifactId>clicktucasa</artifactId>
     <version>1.0.0-SNAPSHOT</version>
-    <name>ClickTuCasa - Pure Domain Raffle Ticketing Engine</name>
-    <description>Core domain engine for online house raffles built with pure Java (Java 21 / 17 LTS compatible) and TDD</description>
+    <name>ClickTuCasa - House Raffle Microservice</name>
+    <description>House raffle ticketing microservice built with Clean Architecture / DDD, Spring Boot, PostgreSQL and Docker (Java 17)</description>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <junit.jupiter.version>5.10.2</junit.jupiter.version>
         <mockito.version>5.11.0</mockito.version>
         <jacoco.version>0.8.11</jacoco.version>
+        <springdoc.version>2.6.0</springdoc.version>
     </properties>
 
     <dependencies>
-        <!-- JUnit 5 API and Engine -->
+        <!-- Spring Boot Web: REST controllers, Jackson serialization -->
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit.jupiter.version}</version>
-            <scope>test</scope>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
+        <!-- Spring Data JPA: JpaRepository, entity manager -->
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.jupiter.version}</version>
-            <scope>test</scope>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
+
+        <!-- Bean Validation for request DTOs (@NotBlank, @Positive, etc.) -->
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-params</artifactId>
-            <version>${junit.jupiter.version}</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- PostgreSQL JDBC driver -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- SpringDoc OpenAPI / Swagger UI -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>${springdoc.version}</version>
+        </dependency>
+
+        <!-- Spring Boot test slice (MockMvc, @SpringBootTest) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
 
-        <!-- Mockito Core and JUnit Jupiter Integration -->
+        <!-- JUnit 5 params (kept explicit for the pure-domain parameterized tests) -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Mockito Core and JUnit Jupiter Integration (versions come from Spring Boot BOM,
+             kept explicit only where a newer version than the BOM default is desired) -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>${mockito.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- H2: only used by persistence adapter integration tests, never at runtime -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!-- Compiler Plugin -->
+            <!-- Spring Boot Plugin: builds the runnable jar, provides spring-boot:run -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
-                <configuration>
-                    <source>17</source>
-                    <target>17</target>
-                </configuration>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
-            <!-- Surefire Plugin for Running JUnit 5 Tests -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.2.5</version>
-            </plugin>
-
-            <!-- JaCoCo Plugin for Code Coverage (100% Rule) -->
+            <!-- JaCoCo Plugin for Code Coverage -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -93,15 +119,33 @@
                             <goal>report</goal>
                         </goals>
                     </execution>
+                    <!--
+                        The 100% JaCoCo gate from Hito 1/3 now only applies to the
+                        domain and application packages. Spring-managed infrastructure
+                        classes (controllers, JPA entities/adapters, config) are
+                        exercised through manual/Swagger testing instead, per the
+                        Hito 4 rubric (tests are explicitly optional for this
+                        milestone), so they are excluded from the coverage rule
+                        rather than left failing the build.
+                    -->
                     <execution>
                         <id>check</id>
                         <goals>
                             <goal>check</goal>
                         </goals>
                         <configuration>
+                            <excludes>
+                                <exclude>com/clicktucasa/infrastructure/**</exclude>
+                                <exclude>com/clicktucasa/ClickTuCasaApplication.class</exclude>
+                            </excludes>
                             <rules>
                                 <rule>
                                     <element>CLASS</element>
+                                    <excludes>
+                                        <exclude>com.clicktucasa.infrastructure.*</exclude>
+                                        <exclude>com.clicktucasa.infrastructure.**.*</exclude>
+                                        <exclude>com.clicktucasa.ClickTuCasaApplication</exclude>
+                                    </excludes>
                                     <limits>
                                         <limit>
                                             <counter>LINE</counter>

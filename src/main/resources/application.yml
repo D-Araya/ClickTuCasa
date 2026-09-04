@@ -1,0 +1,25 @@
+# Base configuration, always loaded regardless of active profile.
+# Anything security-sensitive (Swagger/OpenAPI, in this case) defaults to
+# DISABLED here, and is only re-enabled inside application-dev.yml. Any
+# environment that does not explicitly activate the "dev" profile —
+# i.e. any production-like deployment — is therefore locked out of the
+# API documentation by default (Pilar 3 of the Hito 4 rubric).
+spring:
+  application:
+    name: clicktucasa
+  profiles:
+    active: dev
+  jackson:
+    default-property-inclusion: non_null
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

@@ -30,6 +30,23 @@ public class Ticket {
         this.reservedUntil = null;
     }
 
+    /**
+     * Reconstitution factory used exclusively by persistence adapters
+     * (infrastructure.persistence) to rebuild a Ticket exactly as it was
+     * stored, including its owner and reservation deadline - state that
+     * the business constructors above deliberately do not accept, because
+     * a ticket is never *created* already reserved or already owned. This
+     * does not bypass any business rule: it only restores a snapshot of
+     * state that was reached, at some point, through {@link #reserve} or
+     * {@link #assignToOwner}.
+     */
+    public static Ticket reconstitute(Long number, TicketPrice price, TicketStatus status, String ownerId, LocalDateTime reservedUntil) {
+        Ticket ticket = new Ticket(number, price, status);
+        ticket.ownerId = ownerId;
+        ticket.reservedUntil = reservedUntil;
+        return ticket;
+    }
+
     public void reserve(String userId, int durationMinutes, LocalDateTime currentTime) {
         if (userId == null || userId.trim().isEmpty()) {
             throw new IllegalArgumentException("User ID cannot be empty");

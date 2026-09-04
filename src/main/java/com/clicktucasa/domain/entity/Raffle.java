@@ -48,6 +48,23 @@ public class Raffle {
         this.winnerTicketNumber = null;
     }
 
+    /**
+     * Reconstitution factory used exclusively by persistence adapters
+     * (infrastructure.persistence) to rebuild a Raffle exactly as it was
+     * stored, including a terminal status and its winning ticket - state
+     * that the business constructor above deliberately does not accept,
+     * because a raffle is never *created* already drawn or cancelled.
+     * This does not bypass any business rule: it only restores a snapshot
+     * of state reached, at some point, through {@link #markAsDrawn} or
+     * {@link #cancel}.
+     */
+    public static Raffle reconstitute(String id, String title, HouseAddress houseAddress, HouseValue houseValue, int minTicketsToDraw, List<Ticket> tickets, RaffleStatus status, Long winnerTicketNumber) {
+        Raffle raffle = new Raffle(id, title, houseAddress, houseValue, minTicketsToDraw, tickets);
+        raffle.status = status;
+        raffle.winnerTicketNumber = winnerTicketNumber;
+        return raffle;
+    }
+
     public Ticket findTicketByNumber(Long ticketNumber) {
         if (ticketNumber == null) {
             throw new IllegalArgumentException("Ticket number cannot be null");

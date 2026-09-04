@@ -1,0 +1,29 @@
+# Local development profile: real PostgreSQL (started via docker-compose.yml
+# at the repo root) and Swagger UI fully enabled.
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/clicktucasa_db
+    username: dev_user
+    password: SecureDevPassword123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      # Schema is created once by docker-entrypoint-initdb (see
+      # docker-compose.yml) / Hibernate's own "update" strategy on first
+      # boot; kept as "update" during active development so new columns
+      # are picked up automatically without a manual migration tool.
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+springdoc:
+  api-docs:
+    path: /api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    try-it-out-enabled: true
+    operationsSorter: method
