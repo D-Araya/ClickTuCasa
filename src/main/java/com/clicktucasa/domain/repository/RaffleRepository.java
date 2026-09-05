@@ -2,6 +2,7 @@ package com.clicktucasa.domain.repository;
 
 import com.clicktucasa.domain.entity.Raffle;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -18,4 +19,11 @@ public interface RaffleRepository {
     void save(Raffle raffle);
 
     Optional<Raffle> findById(String id);
+
+    /**
+     * Every raffle currently stored, in no guaranteed order. Returns an
+     * empty list — never {@code null} — when there is nothing stored, so
+     * callers never have to null-check the catalogue.
+     */
+    List<Raffle> findAll();
 }

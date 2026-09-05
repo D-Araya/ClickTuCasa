@@ -52,6 +52,13 @@ public class RaffleRepositoryAdapter implements RaffleRepository {
         return jpaRepository.findById(id).map(this::toDomain);
     }
 
+    @Override
+    public List<Raffle> findAll() {
+        return jpaRepository.findAll().stream()
+                .map(this::toDomain)
+                .collect(Collectors.toList());
+    }
+
     private RaffleEntity toNewEntity(Raffle raffle) {
         RaffleEntity entity = new RaffleEntity(
                 raffle.getId(),

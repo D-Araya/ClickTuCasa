@@ -1,13 +1,24 @@
 package com.clicktucasa.infrastructure.web.dto;
 
 import com.clicktucasa.domain.entity.Raffle;
+import com.clicktucasa.domain.entity.Ticket;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.math.BigDecimal;
-import java.util.List;
 
-@Schema(description = "Full snapshot of a raffle, including all of its tickets")
-public record RaffleResponse(
+/**
+ * Lightweight projection of a raffle, used by the catalogue endpoint
+ * ({@code GET /api/v1/raffles}).
+ *
+ * <p>Deliberately does <strong>not</strong> carry the ticket list. A raffle
+ * can mint tens of thousands of tickets, so returning the full aggregate
+ * for every raffle in the catalogue would push a payload three orders of
+ * magnitude larger than the storefront actually needs to draw a card. The
+ * complete graph stays available, one raffle at a time, through
+ * {@code GET /api/v1/raffles/{raffleId}}.
+ */
+@Schema(description = "Summary of a raffle for catalogue listings, without the ticket list")
+public record RaffleSummaryResponse(
 
         @Schema(description = "Business identifier of the raffle", example = "raf-001")
         String id,
@@ -37,23 +48,16 @@ public record RaffleResponse(
         Long winnerTicketNumber,
 
         @Schema(description = "Number of tickets still AVAILABLE", example = "7")
-        long availableTickets,
+        int availableTickets,
 
         @Schema(description = "Number of tickets currently RESERVED", example = "1")
-        long reservedTickets,
+        int reservedTickets,
 
         @Schema(description = "Number of tickets already SOLD", example = "2")
-        long soldTickets,
-
-        @Schema(description = "Full list of tickets belonging to this raffle")
-        List<TicketResponse> tickets
+        int soldTickets
 ) {
-    public static RaffleResponse from(Raffle raffle) {
-        List<TicketResponse> ticketResponses = raffle.getTickets().stream()
-                .map(TicketResponse::from)
-                .toList();
-
-        return new RaffleResponse(
+    public static RaffleSummaryResponse from(Raffle raffle) {
+        return new RaffleSummaryResponse(
                 raffle.getId(),
                 raffle.getTitle(),
                 raffle.getHouseAddress().value(),
@@ -65,19 +69,20 @@ public record RaffleResponse(
                 raffle.getWinnerTicketNumber(),
                 raffle.getAvailableTickets().size(),
                 raffle.getReservedTickets().size(),
-                raffle.getSoldTickets().size(),
-                ticketResponses);
+                raffle.getSoldTickets().size());
     }
 
     /**
      * Every ticket in a raffle is minted with the same price, so the first
-     * one is representative. Mirrors {@link RaffleSummaryResponse}, so the
-     * catalogue and the detail view always agree on the price shown.
+     * one is representative. A raffle with no tickets cannot exist through
+     * the domain (CreateRaffleUseCase requires a positive pool), but the
+     * fallback keeps the DTO total rather than throwing on malformed data.
      */
     private static BigDecimal resolveTicketPrice(Raffle raffle) {
         return raffle.getTickets().stream()
                 .findFirst()
-                .map(ticket -> ticket.getPrice().amount())
+                .map(Ticket::getPrice)
+                .map(price -> price.amount())
                 .orElse(BigDecimal.ZERO);
     }
 }

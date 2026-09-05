@@ -1,304 +1,195 @@
-# 🏠 ClickTuCasa — Microservicio de Rifas de Casas (Spring Boot + PostgreSQL + Docker)
+# ClickTuCasa — Microservicio de Rifas de Casas (Backend)
 
-> **Unidad 4: Microservicios con Spring Boot, PostgreSQL y Docker — API REST persistente, documentada con Swagger/OpenAPI y protegida por perfiles (Hito 4)**
-> *Programa Java — Globant Talento Ready / Desafío Latam*
+> Motor de rifas de viviendas construido con Arquitectura Limpia y DDD táctico, expuesto como microservicio REST.
+> Proyecto Integrador — Programa Java Avanzado, Desafío Latam / Globant Talento Ready.
 
 ![Java](https://img.shields.io/badge/Java-17%20LTS-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.4-6DB33F)
-![Maven](https://img.shields.io/badge/Build-Maven-blue)
 ![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL%2016-336791)
 ![Docker](https://img.shields.io/badge/Container-Docker%20Compose-2496ED)
-![OpenAPI](https://img.shields.io/badge/Docs-OpenAPI%20%2F%20Swagger--UI-85EA2D)
-![Architecture](https://img.shields.io/badge/Architecture-Clean%20Architecture%20%2F%20DDD-lightgrey)
+![OpenAPI](https://img.shields.io/badge/Docs-Swagger%20(solo%20dev)-85EA2D)
+![Coverage](https://img.shields.io/badge/JaCoCo-100%25%20domain%20%2B%20application-success)
 
-> 📎 **Nota de versión.** Este documento describe el estado **vigente** del código (Unidad 4: microservicio Spring Boot persistente y documentado — Hito 4). Las versiones anteriores del proyecto se conservan, sin cambios, como anexos históricos:
-> - **[README_HITO3.md](./README_HITO3.md)** — Unidad 3: refactor a Clean Architecture + DDD (dominio puro, casos de uso, sin infraestructura real).
-> - **[README_HITO1.md](./README_HITO1.md)** — Unidad 1: dominio construido con TDD antes del refactor a capas.
->
-> El modelo de dominio, las reglas de negocio y la estrategia de testing del núcleo (`domain` y `application.usecase`) **no cambiaron** en este hito — están documentadas en detalle en `README_HITO3.md` (secciones 5 a 12) y siguen siendo válidas. Este documento se enfoca en lo que el Hito 4 agrega: los adaptadores reales de infraestructura.
+**Frontend que consume esta API:** https://github.com/D-Araya/clicktucasa-frontend
 
 ---
 
-## 📑 Tabla de contenidos
+## Stack Tecnológico
 
-1. [Resumen del proyecto](#-1-resumen-del-proyecto)
-2. [Línea de tiempo del proyecto (Hito 1 → Hito 4)](#-2-línea-de-tiempo-del-proyecto-hito-1--hito-4)
-3. [Arquitectura: de dominio puro a microservicio](#-3-arquitectura-de-dominio-puro-a-microservicio)
-4. [Estructura de carpetas](#-4-estructura-de-carpetas)
-5. [API REST (Pilar 1 — 3 pts)](#-5-api-rest-pilar-1)
-6. [Persistencia real: Docker + PostgreSQL + JPA (Pilar 2 — 3 pts)](#-6-persistencia-real-docker--postgresql--jpa-pilar-2)
-7. [Documentación OpenAPI y perfiles (Pilar 3 — 4 pts)](#-7-documentación-openapi-y-perfiles-pilar-3)
-8. [Manejo global de errores](#-8-manejo-global-de-errores)
-9. [Wiring de dependencias y adaptadores de puertos](#-9-wiring-de-dependencias-y-adaptadores-de-puertos)
-10. [Cómo ejecutar el proyecto](#-10-cómo-ejecutar-el-proyecto)
-11. [Decisiones de diseño y trade-offs](#-11-decisiones-de-diseño-y-trade-offs)
-12. [Autoevaluación contra la rúbrica del Hito 4](#-12-autoevaluación-contra-la-rúbrica-del-hito-4)
-13. [Limitaciones conocidas y próximos pasos](#-13-limitaciones-conocidas-y-próximos-pasos)
-14. [Créditos](#-14-créditos)
+* **Backend:** Java 17, Spring Boot 3.3.4, Spring Web, Spring Data JPA, Hibernate, Bean Validation, OpenAPI/Swagger.
+* **Frontend:** TypeScript (`strict`), Vite, Tailwind CSS, DOM nativo sin framework.
+* **Infraestructura:** Docker Compose, PostgreSQL 16 Alpine.
+* **Calidad y Testing:** JUnit 5, Mockito, JaCoCo, TDD y Clean Architecture / DDD.
 
 ---
 
-## 📋 1. Resumen del Proyecto
+## Repositorios de Referencia
 
-**ClickTuCasa** es una plataforma de rifas de casas: se emiten boletos numerados para una vivienda determinada, los usuarios los reservan o compran, y al alcanzar un mínimo de boletos vendidos se sortea un ganador de forma transparente.
-
-El núcleo de negocio (`domain` + `application.usecase`), construido en la Unidad 1 con TDD y refactorizado en la Unidad 3 a Clean Architecture/DDD, se mantiene **sin cambios** en este hito. Lo que la Unidad 4 agrega es todo lo que lo convierte en un **microservicio real, usable desde fuera**:
-
-- Un **`RaffleController`** que expone los cinco flujos de negocio (crear, consultar, reservar, comprar, sortear, cancelar) como una API REST semántica bajo `/api/v1/raffles`.
-- Un **`GlobalExceptionHandler`** que traduce cada excepción de dominio a una respuesta HTTP uniforme, con el código de estado correcto — nunca un stacktrace crudo.
-- Un adaptador **`RaffleRepositoryAdapter`** que implementa el puerto `RaffleRepository` con **Spring Data JPA**, persistiendo en **PostgreSQL** real, levantado con **Docker Compose**.
-- Adaptadores de los dos puertos que quedaban sin implementación (`PaymentGateway`, `RandomNumberGenerator`).
-- Documentación interactiva con **Swagger UI / OpenAPI**, activa solo bajo el perfil `dev` y bloqueada por defecto.
-
-En ningún momento de este trabajo se tocó el paquete `domain` con una anotación de framework: sigue siendo Java puro, tal como lo exige la rúbrica.
+* Core de Dominio / Hito 1: https://github.com/sebavidal10/neonpulse-ticketera
+* Backend Spring Boot / Hito 4: https://github.com/sebavidal10/neonpulse-api-springboot
+* Frontend Vite + TS / Hito 2: https://github.com/sebavidal10/neonpulse-frontend
 
 ---
 
-## 🎓 2. Línea de Tiempo del Proyecto (Hito 1 → Hito 4)
+## Guía de Puesta en Marcha Local
 
-```mermaid
-timeline
-    title Evolucion de ClickTuCasa por hito academico
-    Hito 1 - Unidad 1 : Dominio puro con TDD
-                       : Paquete domain.model
-                       : Un unico RaffleService orquesta todo
-    Hito 3 - Unidad 3 : Refactor a Clean Architecture y DDD
-                       : domain.entity y domain.valueobject
-                       : RaffleService dividido en 4 casos de uso
-                       : Nuevo puerto RaffleRepository
-    Hito 4 - Unidad 4 actual : Adaptadores reales en infrastructure.persistence
-                              : Spring Boot + JPA + PostgreSQL + Docker
-                              : Controlador REST + GlobalExceptionHandler
-                              : Swagger UI aislado por perfiles dev/prod
-```
+> Antes del paso 1: `cp .env.example .env`. **No es obligatorio** — cada variable tiene un valor por defecto de desarrollo que coincide con `docker-compose.yml`, así que el proyecto arranca sin configurar nada. Copia el archivo solo si quieres usar tus propias credenciales.
 
-| Hito | Qué agrega | Dónde está documentado |
+### 1. Levantar la Base de Datos Relacional
+
+    cd ClickTuCasa
+    docker compose up -d
+
+### 2. Ejecutar Pruebas Automatizadas
+
+    ./mvnw clean test
+
+*(en Windows: `mvnw.cmd clean test`; si aún no generaste el wrapper, `mvn clean test` funciona igual)*
+
+### 3. Iniciar el Microservicio Backend
+
+    ./mvnw spring-boot:run
+
+* API REST: http://localhost:8080/api/v1/raffles
+* Swagger UI (perfil `dev`): http://localhost:8080/swagger-ui.html
+
+### 4. Iniciar la Interfaz Web Frontend
+
+    cd ../click-tu-casa-frontend
+    npm install
+    npm run dev
+
+* App Web: http://localhost:5173
+
+---
+
+## Datos de Prueba
+
+La base arranca vacía. Un script deja tres rifas y una de ellas con boletos vendidos y reservados, para que la interfaz muestre los tres estados y una barra de progreso real:
+
+    ./scripts/seed.sh          # Linux / macOS / Git Bash
+    .\scripts\seed.ps1         # Windows PowerShell
+
+O manualmente, una sola rifa:
+
+    curl -X POST http://localhost:8080/api/v1/raffles \
+      -H "Content-Type: application/json" \
+      -d '{"id":"raf-001","title":"Casa Mediterranea con Vista al Mar","houseAddress":"Camino Costero 1240, Zapallar","houseValue":185000000,"minTicketsToDraw":60,"totalTickets":100,"ticketPrice":15000}'
+
+Verificar:
+
+    curl -s http://localhost:8080/api/v1/raffles | jq
+
+---
+
+## Variables de Entorno
+
+Todas se leen con la sintaxis `${VARIABLE:valorPorDefecto}`: **ninguna credencial está escrita en el código**. Los nombres están documentados en `.env.example`, que sí se versiona; `.env`, que contiene los valores reales, nunca.
+
+| Variable | Descripción | Valor por defecto |
 |---|---|---|
-| Hito 1 (Unidad 1) | Dominio puro con TDD | `README_HITO1.md` |
-| Hito 3 (Unidad 3) | Clean Architecture + DDD táctico | `README_HITO3.md` |
-| **Hito 4** (Unidad 4) — **vigente** | Spring Boot, JPA/PostgreSQL, Docker, REST, Swagger | Este documento |
+| `SPRING_PROFILES_ACTIVE` | Perfil activo. `dev` habilita Swagger; cualquier otro lo bloquea | `dev` |
+| `DB_URL` | URL JDBC de PostgreSQL | `jdbc:postgresql://localhost:5432/clicktucasa_db` |
+| `DB_USER` | Usuario de la base de datos (lo usan la app y `docker-compose`) | `dev_user` |
+| `DB_PASSWORD` | Contraseña de la base de datos (idem) | `SecureDevPassword123` |
+| `DB_NAME` | Nombre de la base que crea `docker-compose` | `clicktucasa_db` |
+| `DB_PORT` | Puerto publicado por el contenedor de PostgreSQL | `5432` |
+| `JPA_DDL_AUTO` | Estrategia de esquema de Hibernate | `update` (`validate` en `prod`) |
+| `CORS_ALLOWED_ORIGINS` | Orígenes autorizados a leer la API, separados por coma | `http://localhost:5173,http://localhost:4173,http://localhost:3000` |
+
+> **Sobre el valor por defecto de `DB_PASSWORD`.** Es una credencial de desarrollo local que coincide con la del `docker-compose.yml`, y existe para que un clon recién bajado arranque con un solo comando. Cualquier variable de entorno la sobreescribe sin tocar una línea de código, que es justamente la propiedad que se busca.
 
 ---
 
-## 🏛️ 3. Arquitectura: de Dominio Puro a Microservicio
+## API REST
 
-La regla heredada de la Unidad 3 se mantiene intacta: `domain` no conoce a nadie; `application.usecase` solo conoce al `domain`; todo lo que sabe de Spring, JPA, HTTP o Docker vive en `infrastructure`, y solo en `infrastructure`.
+Base: `/api/v1/raffles`
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                    infrastructure (Hito 4)                    │
-│                                                                │
-│  web/controller/RaffleController  ← traduce HTTP ↔ dominio     │
-│  web/exception/GlobalExceptionHandler  ← @RestControllerAdvice│
-│  web/dto/*  ← Request/Response, nunca el dominio expuesto     │
-│  persistence/RaffleRepositoryAdapter  ← implementa el puerto   │
-│  persistence/entity/{Raffle,Ticket}Entity  ← @Entity JPA       │
-│  payment/SimulatedPaymentGateway  ← implementa PaymentGateway  │
-│  random/SecureRandomNumberGenerator  ← implementa el puerto    │
-│  config/{UseCaseConfig,OpenApiConfig}  ← cablea todo lo demás  │
-└───────────────────────────┬────────────────────────────────────┘
-                            │ depende de (nunca al revés)
-┌───────────────────────────▼────────────────────────────────────┐
-│              application.usecase (Hito 3, sin cambios)          │
-│  CreateRaffle · GetRaffle · ReserveTicket · PurchaseTicket ·     │
-│  DrawWinner · ReleaseExpiredReservations · CancelRaffle          │
-└───────────────────────────┬────────────────────────────────────┘
-                            │ depende de (nunca al revés)
-┌───────────────────────────▼────────────────────────────────────┐
-│                   domain (Hito 1/3, sin cambios)                 │
-│  Raffle · Ticket · value objects · excepciones · puertos         │
-│  (RaffleRepository, PaymentGateway, RandomNumberGenerator)        │
-│  — Java puro, cero anotaciones de Spring o JPA —                 │
-└──────────────────────────────────────────────────────────────┘
-```
-
-**Único punto de acoplamiento cruzado:** `RaffleRepositoryAdapter` es la única clase que conoce tanto el modelo de dominio (`Raffle`, `Ticket`) como el modelo de persistencia (`RaffleEntity`, `TicketEntity`); traduce entre ambos en las dos direcciones (`toDomain` / `toEntity` / `mergeIntoEntity`) y nadie más en el proyecto necesita conocer esa traducción.
-
----
-
-## 📂 4. Estructura de Carpetas
-
-```
-ClickTuCasa/
-├── docker-compose.yml                          # PostgreSQL para el perfil dev — NUEVO
-├── pom.xml                                     # Ahora hijo de spring-boot-starter-parent
-├── README.md                                   # Este documento (vigente — Hito 4)
-├── README_HITO3.md / README_HITO1.md           # Anexos históricos
-├── src/main/java/com/clicktucasa/
-│   ├── ClickTuCasaApplication.java             # main() — NUEVO
-│   ├── domain/                                 # Sin cambios de framework (solo 2 factories nuevas, ver §11)
-│   ├── application/usecase/                    # + CreateRaffle / GetRaffle / CancelRaffle — NUEVOS
-│   └── infrastructure/
-│       ├── web/
-│       │   ├── controller/RaffleController.java        # NUEVO
-│       │   ├── dto/ (Create/Reserve/PurchaseRequest, RaffleResponse, TicketResponse,
-│       │   │         DrawWinnerResponse, ReleaseExpiredReservationsResponse, ErrorResponse)  # NUEVO
-│       │   └── exception/GlobalExceptionHandler.java    # NUEVO
-│       ├── persistence/
-│       │   ├── RaffleRepositoryAdapter.java             # NUEVO — implementa RaffleRepository
-│       │   ├── entity/{RaffleEntity,TicketEntity}.java  # NUEVO — @Entity JPA
-│       │   └── repository/RaffleJpaRepository.java      # NUEVO — extends JpaRepository
-│       ├── payment/SimulatedPaymentGateway.java         # NUEVO — implementa PaymentGateway
-│       ├── random/SecureRandomNumberGenerator.java      # NUEVO — implementa RandomNumberGenerator
-│       └── config/{UseCaseConfig,OpenApiConfig}.java    # NUEVO
-└── src/main/resources/
-    ├── application.yml                          # Base — Swagger deshabilitado — NUEVO
-    └── application-dev.yml                      # Perfil dev — Postgres + Swagger habilitado — NUEVO
-```
-
----
-
-## 🌐 5. API REST (Pilar 1)
-
-Todas las rutas son semánticas, viven bajo `/api/v1/raffles` y usan el verbo HTTP correcto para cada intención:
-
-| Verbo y ruta | Caso de uso invocado | Código de éxito | Cuerpo de la petición |
+| Verbo | Ruta | Respuesta | Descripción |
 |---|---|---|---|
-| `POST /api/v1/raffles` | `CreateRaffleUseCase` | `201 Created` | `CreateRaffleRequest` (id, title, houseAddress, houseValue, minTicketsToDraw, totalTickets, ticketPrice) |
-| `GET /api/v1/raffles/{raffleId}` | `GetRaffleUseCase` | `200 OK` | — |
-| `POST /api/v1/raffles/{raffleId}/tickets/{ticketNumber}/reservations` | `ReserveTicketUseCase` | `200 OK` | `ReserveTicketRequest` (userId, durationMinutes) |
-| `POST /api/v1/raffles/{raffleId}/tickets/{ticketNumber}/purchases` | `PurchaseTicketUseCase` | `200 OK` | `PurchaseTicketRequest` (userId) |
-| `POST /api/v1/raffles/{raffleId}/draw` | `DrawWinnerUseCase` | `200 OK` | — |
-| `POST /api/v1/raffles/{raffleId}/expired-reservations/release` | `ReleaseExpiredReservationsUseCase` | `200 OK` | — |
-| `DELETE /api/v1/raffles/{raffleId}` | `CancelRaffleUseCase` | `204 No Content` | — |
+| `GET` | `/` | `200` · `RaffleSummaryResponse[]` | Catálogo completo, sin la grilla de boletos |
+| `GET` | `/{raffleId}` | `200` · `RaffleResponse` | Rifa completa, con todos sus boletos |
+| `POST` | `/` | `201` · `RaffleResponse` | Crea una rifa y acuña su inventario de boletos |
+| `POST` | `/{raffleId}/tickets/{n}/reservations` | `200` · `RaffleResponse` | Reserva temporal de un boleto |
+| `POST` | `/{raffleId}/tickets/{n}/purchases` | `200` · `RaffleResponse` | Compra de un boleto (cobra por la pasarela) |
+| `POST` | `/{raffleId}/draw` | `200` · `DrawWinnerResponse` | Sortea el ganador entre los boletos vendidos |
+| `POST` | `/{raffleId}/expired-reservations/release` | `200` · `ReleaseExpiredReservationsResponse` | Libera reservas vencidas |
+| `DELETE` | `/{raffleId}` | `204` | Cancela una rifa no sorteada |
 
-`CreateRaffleUseCase`, `GetRaffleUseCase` y `CancelRaffleUseCase` son casos de uso **nuevos** de este hito (ver §11): el dominio ya sabía reservar, comprar, sortear y liberar reservas, pero no existía todavía una forma de crear, leer o cancelar una rifa completa — necesaria para poder ejercitar el flujo *crear → editar → borrar* que el profesor valida manualmente en Swagger UI.
+Todos los errores comparten una forma única, producida por `GlobalExceptionHandler`:
 
-Cada endpoint está anotado con `@Operation`/`@ApiResponses` (Pilar 3) y ningún controlador captura excepciones por su cuenta: todas suben hasta el `GlobalExceptionHandler` (§8).
+```json
+{ "message": "Raffle raf-999 not found", "errorCode": "RESOURCE_NOT_FOUND", "timestamp": "2026-09-05T10:12:33" }
+```
 
----
-
-## 🐘 6. Persistencia Real: Docker + PostgreSQL + JPA (Pilar 2)
-
-- **`docker-compose.yml`** (raíz del repo): un servicio `db` con imagen `postgres:16-alpine`, credenciales de desarrollo y un **volumen persistente** (`postgres_data`) para no perder datos al reiniciar el contenedor.
-- **Entidades JPA** en `infrastructure.persistence.entity`: `RaffleEntity` (`@Entity`, `@Table(name = "raffles")`, `@Id` de tipo `String`) y `TicketEntity` (`@Entity`, `@Table(name = "tickets")`, `@Id` autogenerado, `@ManyToOne` hacia `RaffleEntity`). Ninguna anotación de JPA aparece en `domain` — están exclusivamente en estas dos clases "cascarón".
-- **Repositorio Spring Data**: `RaffleJpaRepository extends JpaRepository<RaffleEntity, String>` — CRUD resuelto sin una sola sentencia SQL manual.
-- **Adaptador**: `RaffleRepositoryAdapter implements RaffleRepository`, la única clase que traduce entre el agregado de dominio (`Raffle`/`Ticket`) y las entidades JPA. Al guardar una rifa ya existente, actualiza la fila y sus boletos **en el lugar** (matcheados por `ticketNumber`), en vez de reemplazar todo el grafo — evita recrear filas innecesariamente en cada reserva o compra.
-
----
-
-## 📖 7. Documentación OpenAPI y Perfiles (Pilar 3)
-
-Los cuatro elementos que pide la rúbrica para el puntaje máximo, todos presentes:
-
-1. **Dependencia** `springdoc-openapi-starter-webmvc-ui` en `pom.xml`.
-2. **`OpenApiConfig`** (`infrastructure.config`) con el `@Bean OpenAPI` que define título, descripción y versión del contrato.
-3. **Anotaciones de contrato**: `@Tag` en `RaffleController`, `@Operation`/`@ApiResponses` en cada endpoint, `@Schema` con `description` y `example` en cada campo de cada DTO.
-4. **Aislamiento hermético por perfiles**: `application.yml` (base, sin perfil) deja `springdoc.api-docs.enabled` y `springdoc.swagger-ui.enabled` en `false`; `application-dev.yml` los sobrescribe a `true`. Cualquier entorno que no active explícitamente `spring.profiles.active: dev` queda con Swagger bloqueado por defecto.
-
-Con el perfil `dev` activo:
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
-- Contrato OpenAPI (JSON): `http://localhost:8080/api-docs`
-
----
-
-## 🚨 8. Manejo Global de Errores
-
-`GlobalExceptionHandler` (`@RestControllerAdvice`, en `infrastructure.web.exception`) es el único lugar del proyecto que traduce una excepción a una respuesta HTTP. Todas devuelven el mismo DTO `ErrorResponse { message, errorCode, timestamp }`:
-
-| Excepción de dominio | Código HTTP | `errorCode` |
+| HTTP | `errorCode` | Cuándo |
 |---|---|---|
-| `RaffleNotFoundException`, `TicketNotFoundException` | `404 Not Found` | `RESOURCE_NOT_FOUND` |
-| `InvalidRaffleOperationException`, `TicketNotAvailableException` | `409 Conflict` | `BUSINESS_RULE_VIOLATION` |
-| `PaymentFailedException` | `402 Payment Required` | `PAYMENT_FAILED` |
-| `InvalidHouseAddressException`, `InvalidHouseValueException`, `InvalidTicketPriceException`, `IllegalArgumentException` | `400 Bad Request` | `INVALID_INPUT` |
-| Validación `@Valid` fallida en un DTO (`MethodArgumentNotValidException`) | `400 Bad Request` | `VALIDATION_ERROR` |
-| Cualquier otra excepción no anticipada | `500 Internal Server Error` | `INTERNAL_ERROR` (mensaje genérico, nunca el stacktrace) |
+| `400` | `INVALID_INPUT` / `VALIDATION_ERROR` | Datos malformados o que violan un invariante de un Value Object |
+| `402` | `PAYMENT_FAILED` | La pasarela rechazó el cobro |
+| `404` | `RESOURCE_NOT_FOUND` | La rifa o el boleto no existen |
+| `409` | `BUSINESS_RULE_VIOLATION` | El boleto no está disponible, o la rifa no admite la operación |
+| `500` | `INTERNAL_ERROR` | Mensaje genérico, sin stacktrace: no se filtra información interna |
 
 ---
 
-## 🧩 9. Wiring de Dependencias y Adaptadores de Puertos
+## Arquitectura
 
-- **`UseCaseConfig`** (`infrastructure.config`) declara un `@Bean` por cada caso de uso, inyectando el `RaffleRepository`/`PaymentGateway`/`RandomNumberGenerator` que Spring resuelve automáticamente. Los casos de uso mismos **no llevan ninguna anotación de Spring** — se instancian con `new` dentro de estos métodos `@Bean` — para que `application.usecase` siga siendo tan agnóstico de framework como `domain` y se pueda seguir testeando con Mockito puro, sin levantar contexto de Spring.
-- **`SimulatedPaymentGateway`** (`infrastructure.payment`, `@Component`): implementa `PaymentGateway` aceptando cualquier pago con un monto positivo. No hay todavía una pasarela real (Stripe, Webpay, MercadoPago) — está fuera del alcance del Hito 4 — pero el puerto ya queda satisfecho end-to-end.
-- **`SecureRandomNumberGenerator`** (`infrastructure.random`, `@Component`): implementa `RandomNumberGenerator` con `java.security.SecureRandom`, para que el sorteo (`DrawWinnerUseCase`) no sea predecible.
-
----
-
-## 🚀 10. Cómo Ejecutar el Proyecto
-
-### 10.1 Requisitos previos
-
-- **JDK 17** o superior
-- **Apache Maven 3.8+**
-- **Docker** y **Docker Compose** (o, alternativamente, apuntar `application-dev.yml` a una base H2 en memoria si Docker no está disponible — ver §13)
-
-### 10.2 Levantar la base de datos
-
-```bash
-docker compose up -d
+```
+src/main/java/com/clicktucasa/
+├── domain/                        # Java puro — CERO anotaciones de framework
+│   ├── entity/                        Raffle, Ticket, RaffleStatus, TicketStatus
+│   ├── valueobject/                   HouseAddress, HouseValue, TicketPrice
+│   ├── exception/                     8 excepciones de negocio tipadas
+│   ├── port/                          PaymentGateway, RandomNumberGenerator
+│   └── repository/                    RaffleRepository (interfaz pura)
+├── application/                   # Casos de uso — CERO anotaciones de framework
+│   └── usecase/                       List, Create, Get, Reserve, Purchase,
+│                                      DrawWinner, ReleaseExpiredReservations, Cancel
+└── infrastructure/                # Único lugar donde vive Spring
+    ├── web/controller/                RaffleController
+    ├── web/dto/                       Requests y Responses con @Schema
+    ├── web/exception/                 GlobalExceptionHandler
+    ├── persistence/                   RaffleEntity, TicketEntity, RaffleRepositoryAdapter
+    ├── payment/ · random/             Adaptadores de los puertos del dominio
+    └── config/                        OpenApiConfig, CorsConfig, UseCaseConfig
 ```
 
-### 10.3 Ejecutar la aplicación (perfil dev activo por defecto)
+Tres decisiones que sostienen el diseño:
 
-```bash
-./mvnw spring-boot:run
-# o, sin wrapper:
-mvn spring-boot:run
-```
+1. **El dominio no conoce a Spring.** Ni `@Entity`, ni `@Component`, ni un `import org.springframework`. Verificable con un `grep`.
+2. **Los casos de uso tampoco.** En vez de anotarlos con `@Service`, se declaran como `@Bean` en `UseCaseConfig`; así siguen siendo instanciables con `new` en un test de Mockito, sin levantar un contexto de Spring.
+3. **El adaptador es el único traductor.** `RaffleRepositoryAdapter` es la única clase que conoce a la vez el modelo de dominio y el de persistencia.
 
-### 10.4 Probar la API
+### Perfiles y superficie expuesta
 
-- Swagger UI: http://localhost:8080/swagger-ui.html
-- Documentación OpenAPI (JSON): http://localhost:8080/api-docs
-- Flujo sugerido para validar de punta a punta (el mismo que usa el profesor para evaluar): crear una rifa (`POST /api/v1/raffles`), consultarla (`GET`), reservar o comprar un boleto, y finalmente cancelarla (`DELETE`) — todo desde el botón "Try it out" de Swagger.
-
-### 10.5 Otros comandos útiles
-
-```bash
-mvn clean compile          # Compilar
-mvn clean test             # Ejecutar la suite de tests (domain + application; ver §13)
-mvn clean verify           # Tests + reporte JaCoCo + regla de cobertura 100% en domain/application
-docker compose down        # Detener Postgres (los datos persisten en el volumen)
-docker compose down -v     # Detener Postgres y borrar también los datos
-```
-
----
-
-## 🧭 11. Decisiones de Diseño y Trade-offs
-
-- **Factories de reconstitución (`Ticket.reconstitute(...)`, `Raffle.reconstitute(...)`)**: los constructores de negocio de `Ticket` y `Raffle` deliberadamente no aceptan un boleto ya reservado/vendido ni una rifa ya sorteada/cancelada — esas transiciones solo deben ocurrir a través de `reserve()`, `assignToOwner()`, `markAsDrawn()`, `cancel()`. Pero `RaffleRepositoryAdapter` sí necesita reconstruir exactamente ese estado al leer una fila de la base de datos. La solución fue agregar un **factory estático de reconstitución** a cada clase, usado exclusivamente por la capa de persistencia: no se salta ninguna regla de negocio, solo restaura un snapshot de un estado que ya se alcanzó legítimamente en algún momento. Ambos factories tienen sus propios tests (`TicketTest`, `RaffleTest`) para mantener el gate de cobertura 100% sobre `domain`.
-- **Tres casos de uso nuevos (`CreateRaffleUseCase`, `GetRaffleUseCase`, `CancelRaffleUseCase`)**: el dominio del Hito 3 solo cubría reservar/comprar/sortear/liberar sobre una rifa que ya existía. Para que la API se pueda probar de punta a punta sin datos precargados (tal como el profesor valida el hito, creando/editando/borrando un registro desde Swagger), hacía falta una forma de crear, leer y cancelar una rifa — se agregaron siguiendo exactamente el mismo patrón (una clase, una responsabilidad, inyección por constructor) que los cuatro casos de uso existentes.
-- **`ddl-auto: update`** en `application-dev.yml`: se documenta aquí explícitamente — es una decisión consciente para desarrollo local (el esquema se ajusta automáticamente a las entidades), no un descuido. En un entorno productivo real correspondería `validate` + una herramienta de migración (Flyway/Liquibase), fuera del alcance de este hito.
-- **La regla de cobertura JaCoCo del 100% ahora excluye `infrastructure`**: los Hitos 1 y 3 exigían 100% de cobertura en *todo* el código porque todo era `domain`/`application` puro. Con la infraestructura de Spring/JPA agregada en este hito, mantener 100% ahí exigiría tests de integración (`@SpringBootTest`, Testcontainers) que la propia rúbrica del Hito 4 declara **opcionales** ("el hito no los necesita"). Se optó por seguir exigiendo 100% en `domain` y `application` (donde ya existía y sigue vigente) y excluir explícitamente `infrastructure` de la regla, en vez de bajar el umbral global o dejar el build roto.
-- **Adaptador de pago simulado en vez de uno real**: implementar una integración real (Stripe/Webpay/MercadoPago) no es parte de la rúbrica del Hito 4 y habría introducido credenciales y dependencias externas innecesarias; `SimulatedPaymentGateway` deja el puerto `PaymentGateway` completamente satisfecho y reemplazable más adelante sin tocar ningún caso de uso.
-
----
-
-## ✅ 12. Autoevaluación contra la Rúbrica del Hito 4
-
-| Checklist del Hito 4 | ¿Cumplido? | Dónde está |
+| | `dev` | `prod` (o sin perfil) |
 |---|---|---|
-| Controladores REST semánticos (`@RestController`, `@RequestMapping`) | ✅ | `RaffleController` bajo `/api/v1/raffles` |
-| Verbos HTTP y códigos de respuesta correctos (200/201/204) | ✅ | Ver tabla de §5 |
-| Interceptor centralizado `@RestControllerAdvice` | ✅ | `GlobalExceptionHandler` |
-| Docker Compose para PostgreSQL con volumen persistente | ✅ | `docker-compose.yml` |
-| Entidades JPA en `infrastructure/persistence`, nunca en `domain` | ✅ | `RaffleEntity`, `TicketEntity` |
-| Repositorios que extienden `JpaRepository` | ✅ | `RaffleJpaRepository` |
-| Dominio puro sin anotaciones de persistencia | ✅ | Sin cambios respecto al Hito 3 |
-| Dependencia SpringDoc OpenAPI en `pom.xml` | ✅ | `springdoc-openapi-starter-webmvc-ui:2.6.0` |
-| Clase de configuración OpenAPI (`@Bean OpenAPI`) | ✅ | `OpenApiConfig` |
-| Swagger-UI accesible bajo perfil `dev` | ✅ | `application-dev.yml` |
-| Swagger bloqueado en el perfil base | ✅ | `application.yml` (`enabled: false`) |
-| `@Tag`/`@Operation`/`@ApiResponses` en los controladores | ✅ | `RaffleController` |
-| `@Schema` en los DTOs | ✅ | Todos los DTOs de request/response |
-| `.env` no commiteado | ✅ | Credenciales de desarrollo viven directamente en `docker-compose.yml`/`application-dev.yml`, sin secretos de producción |
+| API REST | Disponible | Disponible |
+| Swagger UI / `api-docs` | **Habilitado** | **Bloqueado** |
+| `show-sql` | Sí | No |
+| `ddl-auto` | `update` | `validate` |
+
+`application.yml` deja Swagger en `false`; solo `application-dev.yml` lo enciende. `application-prod.yml` **sí se versiona** a propósito: no contiene ningún secreto, únicamente los interruptores de endurecimiento.
 
 ---
 
-## 🔭 13. Limitaciones Conocidas y Próximos Pasos
+## Testing
 
-- **Sin autenticación**: Spring Security no forma parte de esta rúbrica ni se ha visto todavía en el curso. Cualquier cliente puede llamar a cualquier endpoint.
-- **Sin integración real con el frontend**: el monorepo de React mencionado en el roadmap del proyecto todavía no consume esta API — queda para una sesión de integración posterior.
-- **Alternativa H2**: si levantar Docker/PostgreSQL genera fricción en algún entorno, `application-dev.yml` puede apuntarse a una base H2 en memoria (dependencia ya declarada en `pom.xml` como `test`, movible a runtime si se decide usar esta alternativa) sin perder puntaje según la rúbrica del profesor — simplemente hay que declararlo en este README si se opta por ese camino.
-- **Sin pasarela de pago real** ni **migraciones versionadas** (Flyway/Liquibase) — ambas fuera de alcance del Hito 4, ver §11.
-- **Tests de infraestructura opcionales**: `RaffleController`, `RaffleRepositoryAdapter` y los adaptadores de puertos no tienen tests automatizados propios (la rúbrica los declara opcionales); se validan manualmente vía Swagger UI, siguiendo el mismo método que usa el profesor para evaluar. `domain` y `application.usecase` mantienen su cobertura 100% de siempre.
-- **Roadmap sugerido más allá del Hito 4**: Spring Security (JWT), migraciones con Flyway, pasarela de pago real, y despliegue de este microservicio.
+    ./mvnw clean test
+
+* JUnit 5 + Mockito, sin base de datos ni contexto de Spring en los tests de dominio y aplicación.
+* `src/test/java/**` **replica exactamente** la estructura de paquetes de `src/main/java/**`.
+* Todos los nombres de clase, de método y los `@DisplayName` están **en inglés**.
+* JaCoCo exige **100 % de líneas y de ramas** sobre `domain` y `application`. La capa `infrastructure` está excluida de la regla a propósito: son adaptadores de framework, y se verifican por Swagger y por el frontend real.
+
+El informe queda en `target/site/jacoco/index.html`.
 
 ---
 
-## 👤 14. Créditos
+## Historial del proyecto
 
-Proyecto desarrollado por **Daniel Araya Rocha** como parte del programa Java — Globant Talento Ready / Desafío Latam.
+Los README de las etapas anteriores se conservan sin cambios en `docs/`:
 
-Ver también: [README_HITO3.md](./README_HITO3.md) · [README_HITO1.md](./README_HITO1.md)
+* `docs/README_HITO4.md` — Unidad 4: microservicio REST, JPA/PostgreSQL, Swagger por perfiles.
+* `docs/README_HITO3.md` — Unidad 3: refactor a Clean Architecture + DDD.
+* `docs/README_HITO1.md` — Unidad 1: dominio construido con TDD.

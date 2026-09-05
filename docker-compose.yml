@@ -1,23 +1,29 @@
-# Levanta PostgreSQL para el perfil "dev" de ClickTuCasa (Hito 4 - Pilar 2).
-# Uso:
-#   docker compose up -d      # levanta la base de datos
-#   docker compose down       # la detiene (los datos persisten en el volumen)
-#   docker compose down -v    # la detiene y borra también los datos
+# ---------------------------------------------------------------------------
+# PostgreSQL for ClickTuCasa.
+#
+# Credentials come from the environment (.env, see .env.example) with the
+# same local-development defaults used by application.yml, so a fresh clone
+# boots with a single command and no configuration:
+#
+#   docker compose up -d      # start the database
+#   docker compose down       # stop it (data survives in the volume)
+#   docker compose down -v    # stop it and wipe the data too
+# ---------------------------------------------------------------------------
 services:
   db:
     image: postgres:16-alpine
     container_name: clicktucasa-postgres-db
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     environment:
-      POSTGRES_DB: clicktucasa_db
-      POSTGRES_USER: dev_user
-      POSTGRES_PASSWORD: SecureDevPassword123
+      POSTGRES_DB: ${DB_NAME:-clicktucasa_db}
+      POSTGRES_USER: ${DB_USER:-dev_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-SecureDevPassword123}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev_user -d clicktucasa_db"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-dev_user} -d ${DB_NAME:-clicktucasa_db}"]
       interval: 5s
       timeout: 5s
       retries: 5

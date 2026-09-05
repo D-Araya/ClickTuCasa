@@ -4,6 +4,7 @@ import com.clicktucasa.application.usecase.CancelRaffleUseCase;
 import com.clicktucasa.application.usecase.CreateRaffleUseCase;
 import com.clicktucasa.application.usecase.DrawWinnerUseCase;
 import com.clicktucasa.application.usecase.GetRaffleUseCase;
+import com.clicktucasa.application.usecase.ListRafflesUseCase;
 import com.clicktucasa.application.usecase.PurchaseTicketUseCase;
 import com.clicktucasa.application.usecase.ReleaseExpiredReservationsUseCase;
 import com.clicktucasa.application.usecase.ReserveTicketUseCase;
@@ -17,6 +18,7 @@ import com.clicktucasa.infrastructure.web.dto.DrawWinnerResponse;
 import com.clicktucasa.infrastructure.web.dto.ErrorResponse;
 import com.clicktucasa.infrastructure.web.dto.PurchaseTicketRequest;
 import com.clicktucasa.infrastructure.web.dto.RaffleResponse;
+import com.clicktucasa.infrastructure.web.dto.RaffleSummaryResponse;
 import com.clicktucasa.infrastructure.web.dto.ReleaseExpiredReservationsResponse;
 import com.clicktucasa.infrastructure.web.dto.ReserveTicketRequest;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,6 +39,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * REST entry point for the raffle domain (Pilar 1 of the Hito 4 rubric):
@@ -52,6 +55,7 @@ public class RaffleController {
 
     private final CreateRaffleUseCase createRaffleUseCase;
     private final GetRaffleUseCase getRaffleUseCase;
+    private final ListRafflesUseCase listRafflesUseCase;
     private final ReserveTicketUseCase reserveTicketUseCase;
     private final PurchaseTicketUseCase purchaseTicketUseCase;
     private final DrawWinnerUseCase drawWinnerUseCase;
@@ -60,6 +64,7 @@ public class RaffleController {
 
     public RaffleController(CreateRaffleUseCase createRaffleUseCase,
                              GetRaffleUseCase getRaffleUseCase,
+                             ListRafflesUseCase listRafflesUseCase,
                              ReserveTicketUseCase reserveTicketUseCase,
                              PurchaseTicketUseCase purchaseTicketUseCase,
                              DrawWinnerUseCase drawWinnerUseCase,
@@ -67,11 +72,27 @@ public class RaffleController {
                              CancelRaffleUseCase cancelRaffleUseCase) {
         this.createRaffleUseCase = createRaffleUseCase;
         this.getRaffleUseCase = getRaffleUseCase;
+        this.listRafflesUseCase = listRafflesUseCase;
         this.reserveTicketUseCase = reserveTicketUseCase;
         this.purchaseTicketUseCase = purchaseTicketUseCase;
         this.drawWinnerUseCase = drawWinnerUseCase;
         this.releaseExpiredReservationsUseCase = releaseExpiredReservationsUseCase;
         this.cancelRaffleUseCase = cancelRaffleUseCase;
+    }
+
+    @GetMapping
+    @Operation(summary = "List every raffle",
+            description = "Returns the whole catalogue as lightweight summaries. The ticket list is omitted on purpose: "
+                    + "fetch a single raffle to get its full ticket grid.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Catalogue returned, possibly empty",
+                    content = @Content(schema = @Schema(implementation = RaffleSummaryResponse.class)))
+    })
+    public ResponseEntity<List<RaffleSummaryResponse>> listAll() {
+        List<RaffleSummaryResponse> catalogue = listRafflesUseCase.execute().stream()
+                .map(RaffleSummaryResponse::from)
+                .toList();
+        return ResponseEntity.ok(catalogue);
     }
 
     @PostMapping

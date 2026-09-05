@@ -4,6 +4,7 @@ import com.clicktucasa.application.usecase.CancelRaffleUseCase;
 import com.clicktucasa.application.usecase.CreateRaffleUseCase;
 import com.clicktucasa.application.usecase.DrawWinnerUseCase;
 import com.clicktucasa.application.usecase.GetRaffleUseCase;
+import com.clicktucasa.application.usecase.ListRafflesUseCase;
 import com.clicktucasa.application.usecase.PurchaseTicketUseCase;
 import com.clicktucasa.application.usecase.ReleaseExpiredReservationsUseCase;
 import com.clicktucasa.application.usecase.ReserveTicketUseCase;
@@ -33,6 +34,11 @@ public class UseCaseConfig {
     @Bean
     public GetRaffleUseCase getRaffleUseCase(RaffleRepository raffleRepository) {
         return new GetRaffleUseCase(raffleRepository);
+    }
+
+    @Bean
+    public ListRafflesUseCase listRafflesUseCase(RaffleRepository raffleRepository) {
+        return new ListRafflesUseCase(raffleRepository);
     }
 
     @Bean

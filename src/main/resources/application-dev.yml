@@ -1,18 +1,13 @@
-# Local development profile: real PostgreSQL (started via docker-compose.yml
-# at the repo root) and Swagger UI fully enabled.
+# ---------------------------------------------------------------------------
+# Local development profile.
+#
+# It holds ONLY what is specific to developing on a laptop: verbose SQL and
+# a fully enabled Swagger UI. The datasource itself lives in
+# application.yml, read from environment variables, so that the API also
+# boots correctly under any other profile.
+# ---------------------------------------------------------------------------
 spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/clicktucasa_db
-    username: dev_user
-    password: SecureDevPassword123
-    driver-class-name: org.postgresql.Driver
   jpa:
-    hibernate:
-      # Schema is created once by docker-entrypoint-initdb (see
-      # docker-compose.yml) / Hibernate's own "update" strategy on first
-      # boot; kept as "update" during active development so new columns
-      # are picked up automatically without a manual migration tool.
-      ddl-auto: update
     show-sql: true
     properties:
       hibernate:

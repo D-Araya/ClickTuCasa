@@ -1,16 +1,44 @@
-# Base configuration, always loaded regardless of active profile.
-# Anything security-sensitive (Swagger/OpenAPI, in this case) defaults to
-# DISABLED here, and is only re-enabled inside application-dev.yml. Any
-# environment that does not explicitly activate the "dev" profile —
-# i.e. any production-like deployment — is therefore locked out of the
-# API documentation by default (Pilar 3 of the Hito 4 rubric).
+# ---------------------------------------------------------------------------
+# Base configuration, always loaded regardless of the active profile.
+#
+# Two rules govern this file (Hito 5 - Criterio 3, "Pautas de Seguridad de
+# Grado de Produccion"):
+#
+#   1. CODE IN GIT, SECRETS IN THE ENVIRONMENT. Every credential is read
+#      through ${VARIABLE:default}. The defaults are local-development
+#      values that match docker-compose.yml, so the project boots with zero
+#      configuration; any other environment overrides them with real
+#      variables and never needs a code change. See .env.example.
+#
+#   2. ANYTHING SECURITY-SENSITIVE DEFAULTS TO DISABLED. Swagger/OpenAPI is
+#      off here and re-enabled only inside application-dev.yml, so every
+#      environment that does not explicitly activate the "dev" profile is
+#      locked out of the API documentation.
+# ---------------------------------------------------------------------------
 spring:
   application:
     name: clicktucasa
+
   profiles:
-    active: dev
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/clicktucasa_db}
+    username: ${DB_USER:dev_user}
+    password: ${DB_PASSWORD:SecureDevPassword123}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:update}
+
   jackson:
     default-property-inclusion: non_null
+
+# Origins allowed to read this API's responses (see CorsConfig). Comma
+# separated, written exactly: scheme included, no trailing slash.
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:4173,http://localhost:3000}
 
 springdoc:
   api-docs:

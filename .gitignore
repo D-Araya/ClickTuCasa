@@ -1,7 +1,16 @@
-# Maven build output
+# ── Build output ─────────────────────────────────────────────────────────
 target/
+*.class
 
-# IDE files
+# ── Secrets: never versioned ─────────────────────────────────────────────
+# The negation is deliberate: `.env.*` would otherwise also swallow the
+# example file, and that file is the one thing a reviewer needs in order to
+# run this project with their own credentials.
+.env
+.env.*
+!.env.example
+
+# ── IDE ──────────────────────────────────────────────────────────────────
 .idea/
 *.iml
 .vscode/
@@ -9,6 +18,9 @@ target/
 .classpath
 .project
 
-# OS generated files
+# ── OS ───────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
+
+# Carpeta que crea la app de escritorio de Claude al entregar archivos
+Claude outputs/

@@ -1,0 +1,20 @@
+# ---------------------------------------------------------------------------
+# Production profile: minimum exposed surface.
+#
+# Swagger UI and the raw OpenAPI document are explicitly switched off, SQL
+# logging is silenced, and the schema is only validated - never mutated -
+# on boot. This file is versioned on purpose: it contains no secrets, only
+# the hardening switches. Every credential still comes from the
+# environment, exactly as in the base configuration.
+# ---------------------------------------------------------------------------
+spring:
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
